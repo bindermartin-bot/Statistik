@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistik an der BM - BBZ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Nunito:wght@700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #090e17; --glass-bg: rgba(255, 255, 255, 0.03); --glass-border: rgba(255, 255, 255, 0.08);
+            --primary: #0ea5e9; --primary-sh: #0284c7; --success: #10b981; --success-sh: #059669;
+            --warning: #f43f5e; --warning-sh: #be123c; --accent: #8b5cf6; --accent-sh: #6d28d9;
+            --info: #f59e0b; --info-sh: #d97706; --pink: #ec4899; --pink-sh: #be185d;
+            --txt: #f8fafc; --mut: #94a3b8;
+        }
+
+        .cite { display: none !important; }
+
+        body {
+            margin: 0; padding: 80px 20px 150px 20px; font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark); color: var(--txt); min-height: 100vh; overflow-x: hidden;
+            background-image: radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.05), transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05), transparent 40%);
+            background-attachment: fixed; line-height: 1.8; font-size: 16px;
+        }
+
+        h1, h2, h3, h4 { font-family: 'Nunito', sans-serif; margin-top: 0; line-height: 1.2; }
+        h3 { font-size: 1.5em; margin-bottom: 20px; }
+        p { margin-bottom: 20px; }
+        ul { margin-top: 10px; padding-left: 25px; margin-bottom: 20px; }
+        li { margin-bottom: 12px; }
+        
+        .top-nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: 65px;
+            background: rgba(9, 14, 23, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--glass-border);
+            display: flex; align-items: center; padding: 0 20px; box-sizing: border-box; z-index: 1000;
+        }
+        .nav-logo { height: 40px; margin-left: 15px; border-radius: 6px; }
+        
+        .score-hud { margin-left: auto; display: flex; align-items: center; gap: 15px; font-family: 'Share Tech Mono', monospace; font-size: 1.3em; }
+        .score-val { color: var(--primary); font-weight: bold; text-shadow: 0 0 10px rgba(14, 165, 233, 0.5); }
+        .streak-val { color: var(--info); font-weight: bold; background: rgba(245, 158, 11, 0.2); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--info); }
+
+        .container { width: 100%; max-width: 1000px; margin: 0 auto; position: relative; }
+        
+        .glass-panel {
+            background: var(--glass-bg); backdrop-filter: blur(20px); border-radius: 24px;
+            border: 1px solid var(--glass-border); padding: 50px; margin-bottom: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .screen, .theory-step { display: none; animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .screen.active, .theory-step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary); color: #fff; border: none; border-radius: 12px;
+            padding: 16px 32px; font-family: 'Nunito'; font-weight: 800; font-size: 1.1em;
+            cursor: pointer; box-shadow: 0 6px 0 var(--primary-sh); transition: 0.1s; display: inline-block; margin: 10px 5px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:active { transform: translateY(6px); box-shadow: 0 0 0 transparent; }
+        .btn.success { background: var(--success); box-shadow: 0 6px 0 var(--success-sh); }
+        .btn.warning { background: var(--warning); box-shadow: 0 6px 0 var(--warning-sh); }
+        .btn.info { background: var(--info); box-shadow: 0 6px 0 var(--info-sh); }
+        .btn.accent { background: var(--accent); box-shadow: 0 6px 0 var(--accent-sh); }
+        .btn.pink { background: var(--pink); box-shadow: 0 6px 0 var(--pink-sh); }
+
+        .btn-small { padding: 8px 16px; font-size: 0.9em; box-shadow: 0 3px 0 var(--glass-border); margin: 0; border: 1px solid var(--glass-border); background: transparent; color: var(--mut); cursor: pointer; border-radius: 8px; font-family: 'Nunito'; font-weight: bold; transition: 0.1s;}
+        .btn-small:hover { color: white; border-color: white; }
+        .btn-small.active-tab { color: white; border-color: var(--primary); background: rgba(14, 165, 233, 0.2); }
+
+        .opt {
+            background: rgba(255,255,255,0.03); color: var(--txt); border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 18px 24px; font-family: 'Nunito'; font-weight: 800; font-size: 1.1em;
+            cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,0.4); transition: 0.1s; width: 100%; text-align: center;
+        }
+        .opt:active { transform: translateY(6px); box-shadow: 0 0 0 transparent !important; }
+        .opt.m1:hover { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 6px 0 var(--primary-sh); }
+        .opt.m2:hover { background: var(--success); border-color: var(--success); color: #fff; box-shadow: 0 6px 0 var(--success-sh); }
+        .opt.m3:hover { background: var(--warning); border-color: var(--warning); color: #fff; box-shadow: 0 6px 0 var(--warning-sh); }
+        .opt.m4:hover { background: var(--info); border-color: var(--info); color: #fff; box-shadow: 0 6px 0 var(--info-sh); }
+        .opt.m5:hover { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 0 var(--accent-sh); }
+        .opt.m6:hover { background: var(--pink); border-color: var(--pink); color: #fff; box-shadow: 0 6px 0 var(--pink-sh); }
+
+        /* Grids & Cards */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; }
+        
+        .card {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 35px; cursor: pointer; transition: 0.2s;
+            display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+        }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .card:active { transform: translateY(6px); box-shadow: 0 0 0 transparent; }
+        
+        #card-mod1:hover { border-color: var(--primary); background: rgba(14, 165, 233, 0.08); }
+        #card-mod2:hover { border-color: var(--success); background: rgba(16, 185, 129, 0.08); }
+        #card-mod3:hover { border-color: var(--warning); background: rgba(244, 63, 94, 0.08); }
+        #card-mod4:hover { border-color: var(--info); background: rgba(245, 158, 11, 0.08); }
+        #card-mod5:hover { border-color: var(--accent); background: rgba(139, 92, 246, 0.08); }
+        #card-mod6:hover { border-color: var(--pink); background: rgba(236, 72, 153, 0.08); }
+
+        .card.completed::after {
+            content: 'ABGESCHLOSSEN'; position: absolute; top: 20px; right: -40px; background: var(--success); color: var(--bg-dark);
+            font-family: 'Nunito'; font-weight: 800; font-size: 0.8em; padding: 5px 45px; transform: rotate(45deg); letter-spacing: 2px;
+        }
+
+        /* Theory Layout Neu */
+        .notebook-guide { margin-bottom: 40px; }
+        .notebook-guide h3 { font-size: 1.8em; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .notebook-box { 
+            background: rgba(0,0,0,0.3); border-left: 4px solid var(--primary); 
+            padding: 30px; border-radius: 0 16px 16px 0; margin-bottom: 30px; font-size: 1.05em;
+        }
+        .notebook-quote { font-style: italic; color: var(--mut); padding-left: 20px; border-left: 2px solid var(--mut); margin: 20px 0; }
+        .theory-graphic { 
+            width: 100%; min-height: 250px; background: rgba(0,0,0,0.4); 
+            border-radius: 20px; margin: 30px 0; display: flex; align-items: center; justify-content: center; 
+            padding: 30px; box-sizing: border-box; border: 1px solid var(--glass-border); flex-direction: column;
+        }
+        svg { width: 100%; height: auto; max-height: 280px; overflow: visible; }
+
+        .question-text { font-size: 1.5em; margin-bottom: 35px; font-weight: 600; line-height: 1.5; color: var(--txt); text-align: center; }
+        
+        .dropzone { 
+            background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.2); 
+            border-radius: 20px; padding: 30px 20px; text-align: center; cursor: pointer; 
+            font-family: 'Nunito'; font-weight: 800; letter-spacing: 2px; color: var(--mut); 
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3); transition: 0.1s; font-size: 1.1em;
+        }
+        .dropzone:hover { border-color: var(--primary); border-style: solid; background: var(--primary); color: #fff; box-shadow: 0 6px 0 var(--primary-sh); }
+        .dropzone:active { transform: translateY(6px); box-shadow: 0 0 0 transparent; }
+
+        /* Datatable */
+        .data-table { width: 100%; max-width: 300px; border-collapse: collapse; margin-bottom: 20px; color: var(--txt); }
+        .data-table th { border-bottom: 2px solid var(--mut); padding: 8px; text-align: left; font-family: 'Share Tech Mono'; }
+        .data-table td { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 8px; font-family: 'Share Tech Mono'; }
+
+        input[type=range] { width: 100%; max-width: 400px; margin: 20px 0; accent-color: var(--primary); cursor: pointer; height: 8px; border-radius: 4px; }
+
+        /* Socratic Helper (Error) - Klein & Kompakt */
+        .ai-hud {
+            position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 50px) scale(0.95);
+            width: 90%; max-width: 400px; background: rgba(9, 14, 23, 0.98); 
+            border: 2px solid var(--warning); border-radius: 16px;
+            padding: 20px; box-shadow: 0 10px 40px rgba(244, 63, 94, 0.4); 
+            opacity: 0; pointer-events: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2000;
+        }
+        .ai-hud.show { transform: translate(-50%, 0) scale(1); opacity: 1; pointer-events: all; }
+        .ai-hud h3 { margin: 0 0 10px 0; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
+        .ai-hud p { font-size: 1.2em; margin: 10px 0 20px 0; line-height: 1.4; color: var(--txt); font-weight: 600; }
+        
+        .sys-toast {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+            background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success);
+            padding: 12px 35px; border-radius: 40px; font-family: 'Share Tech Mono', monospace; font-size: 1.3em;
+            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 2000; box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+            display: flex; align-items: center; gap: 12px;
+        }
+        .sys-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast-pts { font-weight: bold; background: var(--success); color: var(--bg-dark); padding: 3px 10px; border-radius: 12px; font-size: 0.85em; }
+
+        .level-complete-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(9, 14, 23, 0.98); z-index: 5000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.5s;
+        }
+        .level-complete-overlay.show { opacity: 1; pointer-events: all; }
+        .trophy { width: 220px; height: 220px; margin-bottom: 40px; transform: scale(0); transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .level-complete-overlay.show .trophy { transform: scale(1); }
+        
+        .progress-dots { display: flex; justify-content: center; gap: 12px; margin: 40px 0; }
+        .dot { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: 0.3s; }
+        .dot.active { background: var(--primary); box-shadow: 0 0 15px var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <button class="btn-small" id="btn-back" onclick="goHome()" style="display:none;">◄ MENÜ</button>
+        <div class="score-hud">
+            <div>SCORE: <span id="global-score" class="score-val">0</span></div>
+            <div id="streak-badge" class="streak-val">x1</div>
+        </div>
+        <img src="Logo 05 - klein.png" alt="Labor Logo" class="nav-logo">
+    </div>
+
+    <div id="sys-toast" class="sys-toast">
+        <span>SYS_OK</span><span id="toast-pts" class="toast-pts">+100</span>
+    </div>
+
+    <div id="level-complete-modal" class="level-complete-overlay">
+        <svg class="trophy" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="rgba(16, 185, 129, 0.1)" />
+            <polygon points="20,20 80,20 60,70 40,70" fill="var(--info)"/>
+            <rect x="35" y="70" width="30" height="15" fill="var(--mut)"/>
+            <path d="M20,20 C-10,40 30,60 30,50" fill="none" stroke="var(--info)" stroke-width="6"/>
+            <path d="M80,20 C110,40 70,60 70,50" fill="none" stroke="var(--info)" stroke-width="6"/>
+            <circle cx="50" cy="40" r="15" fill="var(--bg-dark)"/>
+            <path d="M42,40 L48,46 L60,32" fill="none" stroke="var(--success)" stroke-width="4"/>
+        </svg>
+        <h2 id="end-title" style="color: var(--success); font-size: 3em; margin-bottom: 10px; text-align: center;">MODUL ABSOLVIERT!</h2>
+        <p id="end-desc" style="color: var(--mut); font-size: 1.4em; margin-bottom: 50px; text-align: center;">25 Aufgaben erfolgreich kalibriert.</p>
+        <button class="btn success" onclick="closeLevelComplete()">Zum Menü</button>
+    </div>
+
+    <div class="container">
+        <!-- ================= MAIN MENU ================= -->
+        <div id="screen-home" class="screen active">
+            <div class="glass-panel" style="text-align: center; padding: 80px 20px;">
+                <h1 style="font-size: 3.8em; color: var(--primary); margin-bottom: 20px; letter-spacing: -2px;">Statistik an der BM</h1>
+                <p style="font-size: 1.3em; color: var(--mut); max-width: 700px; margin: 0 auto;">Vom Chaos zur Erkenntnis. Lerne, wie du Daten in den Wissenschaften erfasst, darstellst und professionell auswertest.</p>
+            </div>
+            <div class="grid-2">
+                <div class="card" id="card-mod1" onclick="startModule(1)" style="border-top: 4px solid var(--primary);">
+                    <h2 style="color: var(--primary);">1. Datengewinnung</h2><p style="color: var(--mut); margin: 0; font-size: 1.1em;">Skalenniveaus und Erhebungstypen.</p>
+                </div>
+                <div class="card" id="card-mod2" onclick="startModule(2)" style="border-top: 4px solid var(--success);">
+                    <h2 style="color: var(--success);">2. Grafiken</h2><p style="color: var(--mut); margin: 0; font-size: 1.1em;">Histogramme vs. Säulendiagramme.</p>
+                </div>
+                <div class="card" id="card-mod3" onclick="startModule(3)" style="border-top: 4px solid var(--warning);">
+                    <h2 style="color: var(--warning);">3. Lagekennzahlen</h2><p style="color: var(--mut); margin: 0; font-size: 1.1em;">Mittelwert vs. Median & Spannweite.</p>
+                </div>
+                <div class="card" id="card-mod4" onclick="startModule(4)" style="border-top: 4px solid var(--info);">
+                    <h2 style="color: var(--info);">4. Boxplot</h2><p style="color: var(--mut); margin: 0; font-size: 1.1em;">Quartile, Spannweite und Ausreisser.</p>
+                </div>
+                <div class="card" id="card-mod5" onclick="startModule(5)" style="border-top: 4px solid var(--accent);">
+                    <h2 style="color: var(--accent);">5. Korrelation</h2><p style="color: var(--mut); margin: 0; font-size: 1.1em;">Zusammenhänge in Streudiagrammen.</p>
+                </div>
+                <div class="card" id="card-mod6" onclick="startModule(6)" style="border-top: 4px solid var(--pink);">
+                    <h2 style="color: var(--pink);">6. Umfragen erstellen</h2><p style="color: var(--mut); margin: 0; font-size: 1.1em;">Von der Hypothese zum Fragebogen.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODULE 1: DATENGEWINNUNG ================= -->
+        <div id="mod1-theory" class="screen">
+            <div class="glass-panel">
+                <h2 style="color: var(--primary); border-bottom: 2px solid var(--glass-border); padding-bottom: 25px; font-size: 2.2em;">Study Guide: Datengewinnung</h2>
+                
+                <div id="step-mod1-1" class="theory-step active" data-mod="mod1">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--primary)">1.</span> Herkunft der Daten</h3>
+                        <p>Um Fragestellungen in Studien zu beantworten, sind Daten notwendig. Wir unterscheiden in der Praxis zwei grundlegende Methoden, wie man an diese Daten kommt:</p>
+                        
+                        <div class="grid-2" style="margin-top: 30px;">
+                            <div class="notebook-box" style="border-color: var(--primary); margin:0;">
+                                <h4 style="color: var(--primary); font-size: 1.3em;">Erhebungen</h4>
+                                <p style="margin:0;">Hier werden <em>im Prinzip vorhandene Daten</em> erfasst. Es werden keine zusätzlichen Aktionen durchgeführt, um die Daten künstlich zu erzeugen. Klassische Beispiele sind Online-Fragebögen oder Beobachtungsstudien<span class="cite">[cite: 1]</span>.</p>
+                            </div>
+                            <div class="notebook-box" style="border-color: var(--success); margin:0;">
+                                <h4 style="color: var(--success); font-size: 1.3em;">Experimente</h4>
+                                <p style="margin:0;">Hier werden Daten <em>gezielt erzeugt</em>. Es gibt eine feste Versuchsanordnung, bei der ein Faktor gezielt verändert wird. <strong>Nur so können kausale Zusammenhänge bewiesen werden.</strong><span class="cite">[cite: 1]</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod1-2" class="theory-step" data-mod="mod1">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--primary)">2.</span> Qualitativ (Beobachtungswerte)</h3>
+                        <p>Qualitative Daten beschreiben Zustände oder Eigenschaften. Man kann mit ihnen nicht im mathematischen Sinne "rechnen". Wir unterteilen sie in zwei Skalenniveaus:</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--primary);">
+                            <h4 style="color: var(--primary); font-size: 1.3em;">Nominal (Keine Wertung)</h4>
+                            <p>Es gibt <strong>keine natürliche Rangordnung</strong>. Die Kategorien stehen völlig gleichwertig nebeneinander<span class="cite">[cite: 1]</span>.</p>
+                            <p class="notebook-quote">Beispiele: Nationalität, Haarfarbe, Blutgruppe. "Blond" ist nicht mathematisch grösser oder besser als "Braun".</p>
+                        </div>
+
+                        <div class="notebook-box" style="border-color: var(--success);">
+                            <h4 style="color: var(--success); font-size: 1.3em;">Ordinal (Mit Rangordnung)</h4>
+                            <p>Eine <strong>Rangordnung ist sinnvoll</strong>, aber die exakten Abstände zwischen den Stufen sind nicht messbar oder unklar<span class="cite">[cite: 1]</span>.</p>
+                            <p class="notebook-quote">Beispiele: Kleidergrössen (S, M, L) oder Hotel-Sterne. L ist klar grösser als M, aber man weiss nicht, ob der Abstand exakt gleich ist wie zwischen M und S.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod1-3" class="theory-step" data-mod="mod1">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--primary)">3.</span> Quantitativ (Messwerte)</h3>
+                        <p>Hierbei handelt es sich um "echte" Zahlen, mit denen mathematische Operationen durchgeführt werden können.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--warning);">
+                            <h4 style="color: var(--warning); font-size: 1.3em;">Diskret (Zählen)</h4>
+                            <p>Es dürfen nur isolierte (meist ganze) Zahlenwerte angenommen werden. Man <strong>zählt</strong> sie ab<span class="cite">[cite: 1]</span>.</p>
+                            <p class="notebook-quote">Beispiel: Anzahl Geschwister oder defekte Bauteile. Es gibt 2 oder 3 defekte Bauteile, aber keine 2.7.</p>
+                        </div>
+
+                        <div class="notebook-box" style="border-color: var(--info);">
+                            <h4 style="color: var(--info); font-size: 1.3em;">Stetig (Messen)</h4>
+                            <p>Sie können alle Zahlenwerte eines Intervalls annehmen (inklusive unendlich vieler Kommastellen). Man <strong>misst</strong> sie<span class="cite">[cite: 1]</span>.</p>
+                            <p class="notebook-quote">Beispiel: Körpergrösse oder Zeit. Jemand ist in der Realität z.B. 175.43289... cm gross.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-dots" id="mod1-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+                <div style="text-align: right;"><button class="btn" id="mod1-next-btn" onclick="nextTheory('mod1')">Aufgaben starten</button></div>
+            </div>
+        </div>
+
+        <div id="mod1-game" class="screen">
+            <div class="glass-panel">
+                <h2 style="font-size: 2.2em;">Skalen kalibrieren</h2>
+                <div id="mod1-question" class="question-text" style="font-size: 1.6em; margin: 50px 0; background: rgba(0,0,0,0.3); padding: 40px; border-radius: 20px; border: 1px solid var(--glass-border);">Lade Daten...</div>
+                <div class="grid-2" id="mod1-options"></div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; display:none; margin-top:30px;" id="mod1-dropzones">
+                    <div class="dropzone" onclick="checkMod1('nominal')">NOMINAL</div><div class="dropzone" onclick="checkMod1('ordinal')">ORDINAL</div>
+                    <div class="dropzone" onclick="checkMod1('diskret')">DISKRET</div><div class="dropzone" onclick="checkMod1('stetig')">STETIG</div>
+                </div>
+                <p id="mod1-score" style="text-align: right; color: var(--primary); font-weight: bold; margin-top: 40px; font-size: 1.4em;">Fortschritt: 0 / 25</p>
+            </div>
+        </div>
+
+        <!-- ================= MODULE 2: GRAFIKEN ================= -->
+        <div id="mod2-theory" class="screen">
+            <div class="glass-panel">
+                <h2 style="color: var(--success); border-bottom: 2px solid var(--glass-border); padding-bottom: 25px; font-size: 2.2em;">Study Guide: Grafiken</h2>
+                
+                <div id="step-mod2-1" class="theory-step active" data-mod="mod2">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--success)">1.</span> Für qualitative Daten</h3>
+                        <p>Qualitative Merkmale (Nominal/Ordinal) werden meistens im Kreis- oder Säulendiagramm dargestellt.</p>
+                        
+                        <div class="grid-2" style="margin-top: 30px;">
+                            <div class="notebook-box" style="border-color: var(--success); margin:0;">
+                                <h4 style="color: var(--success); font-size: 1.2em;">Kreisdiagramm</h4>
+                                <p>Eignet sich hervorragend, um <em>relative Häufigkeiten</em> (Prozente) und deren Anteile an einem Ganzen darzustellen<span class="cite">[cite: 1]</span>.</p>
+                            </div>
+                            <div class="notebook-box" style="border-color: var(--success); margin:0;">
+                                <h4 style="color: var(--success); font-size: 1.2em;">Säulendiagramm</h4>
+                                <p>Jede Merkmalsausprägung erhält ein Rechteck gleicher Breite. Wichtig: Die Säulen werden durch <strong>Zwischenräume</strong> voneinander abgetrennt<span class="cite">[cite: 1]</span>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod2-2" class="theory-step" data-mod="mod2">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--success)">2.</span> Für quantitative Daten</h3>
+                        <p>Die wohl wichtigste Darstellungsform für quantitative Merkmale (Messwerte) ist das <strong>Histogramm</strong>.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--primary);">
+                            <h4 style="color: var(--primary); font-size: 1.3em;">Warum gibt es keine Zwischenräume?</h4>
+                            <p>Beim Histogramm werden stetige Messwerte in aneinandergrenzende <strong>Klassen</strong> eingeteilt (z.B. Längen von 6.5m bis 6.75m). Weil die Klassen nahtlos aneinander anknüpfen, werden die Rechtecke im Histogramm zwingend <strong>ohne Zwischenräume</strong> gezeichnet<span class="cite">[cite: 1]</span>.</p>
+                        </div>
+
+                        <div class="theory-graphic">
+                            <label style="color: var(--txt); font-size: 1.1em; font-weight: bold; margin-bottom: 20px;">Datentabelle in Diagramm umwandeln:</label>
+                            
+                            <table class="data-table">
+                                <tr><th>Klasse</th><th>Häufigkeit</th></tr>
+                                <tr><td>0 - 10</td><td>25%</td></tr>
+                                <tr><td>10 - 20</td><td>55%</td></tr>
+                                <tr><td>20 - 30</td><td>20%</td></tr>
+                            </table>
+
+                            <div style="display:flex; gap:10px; margin-bottom: 20px;">
+                                <button class="btn-small" id="btn-pie" onclick="drawChart('pie')">Kreisdiagramm</button>
+                                <button class="btn-small" id="btn-bar" onclick="drawChart('bar')">Säulen (mit Lücken)</button>
+                                <button class="btn-small active-tab" id="btn-hist" onclick="drawChart('hist')">Histogramm</button>
+                            </div>
+                            
+                            <div id="m2-dynamic-chart" style="width: 150px; height: 150px; display:flex; justify-content:center; align-items:center;">
+                                <svg viewBox="0 0 100 100" style="width: 100px; height: 100px; overflow:visible;">
+                                    <rect x="20" y="75" width="20" height="25" fill="var(--primary)" stroke="var(--bg-dark)"/>
+                                    <rect x="40" y="45" width="20" height="55" fill="var(--success)" stroke="var(--bg-dark)"/>
+                                    <rect x="60" y="80" width="20" height="20" fill="var(--warning)" stroke="var(--bg-dark)"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-dots" id="mod2-dots"><div class="dot active"></div><div class="dot"></div></div>
+                <div style="text-align: right;"><button class="btn success" id="mod2-next-btn" onclick="nextTheory('mod2')">Aufgaben starten</button></div>
+            </div>
+        </div>
+
+        <div id="mod2-game" class="screen">
+            <div class="glass-panel">
+                <h2 style="font-size: 2.2em;">Grafik-Analyse</h2>
+                <div id="mod2-graphic-container" class="theory-graphic" style="display:none; height: 250px; background: transparent; border:none;"></div>
+                <div id="mod2-question" class="question-text" style="font-size: 1.5em; margin-bottom: 40px;"></div>
+                <div class="grid-2" id="mod2-options"></div>
+                <p id="mod2-score" style="text-align: right; color: var(--success); font-weight: bold; margin-top: 40px; font-size: 1.4em;">Fortschritt: 0 / 25</p>
+            </div>
+        </div>
+
+        <!-- ================= MODULE 3: LAGEKENNZAHLEN ================= -->
+        <div id="mod3-theory" class="screen">
+            <div class="glass-panel">
+                <h2 style="color: var(--warning); border-bottom: 2px solid var(--glass-border); padding-bottom: 25px; font-size: 2.2em;">Study Guide: Lage & Streuung</h2>
+                
+                <div id="step-mod3-1" class="theory-step active" data-mod="mod3">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--warning)">1.</span> Mittelwert vs. Median</h3>
+                        <p>Warum brauchen wir in der Statistik zwei Kennzahlen für "die Mitte"? Die Antwort liegt in der Robustheit gegenüber Messfehlern.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--warning);">
+                            <h4 style="color: var(--warning); font-size: 1.3em;">Der Mittelwert (Die Waage)</h4>
+                            <p>Der Mittelwert ist der klassische Durchschnitt. Man addiert alle Ausprägungen und teilt sie durch die Anzahl.</p>
+                            <p style="color: var(--warning); font-weight: bold; margin-top: 15px;">Die grosse Schwäche:</p>
+                            <p>Er funktioniert wie eine physikalische Waage auf einem Drehpunkt. Ein einziger massiver "Ausreisser" (z.B. ein Messfehler) reicht aus, um das gesamte Gleichgewicht zu zerstören und den Wert extrem zu verfälschen<span class="cite">[cite: 1]</span>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod3-2" class="theory-step" data-mod="mod3">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--warning)">2.</span> Die Lösung: Der Median</h3>
+                        <p>Der Median ist die Antwort auf das Ausreisser-Problem. Er ist schlicht der Wert, der genau in der Mitte liegt.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--success);">
+                            <h4 style="color: var(--success); font-size: 1.3em;">Bestimmung des Medians</h4>
+                            <p><strong>Die absolute Grundregel:</strong> Die Daten MÜSSEN zuerst der Grösse nach geordnet werden<span class="cite">[cite: 1]</span>!</p>
+                            <ul>
+                                <li>Bei einer <strong>ungeraden</strong> Anzahl ist es exakt der Wert in der Mitte.</li>
+                                <li>Bei einer <strong>geraden</strong> Anzahl nimmt man den Durchschnitt der beiden in der Mitte liegenden Werte.</li>
+                            </ul>
+                        </div>
+
+                        <div class="theory-graphic">
+                            <label style="color: var(--txt); font-size: 1.1em; font-weight: bold; margin-bottom: 10px;">Interaktiver Ausreisser-Schock:</label>
+                            <p style="color: var(--mut); font-size: 0.9em; margin-bottom: 20px; text-align: center;">Die Datenreihe ist: 10, 12, 14, 16 und [Slider]. Verschiebe den rechten Wert (Ausreisser) und vergleiche.</p>
+                            
+                            <input type="range" min="20" max="100" value="20" oninput="updM3(this.value)" style="max-width: 300px;">
+                            
+                            <div style="display:flex; justify-content:space-around; width: 100%; font-family:'Share Tech Mono'; font-size:1.4em; margin-top: 15px;">
+                                <span style="color:var(--warning)">Mittelwert: <span id="m3-mean">14.4</span></span>
+                                <span style="color:var(--success)">Median: <span id="m3-med">14.0</span></span>
+                            </div>
+
+                            <svg viewBox="0 0 300 80" style="margin-top: 30px; overflow: visible;">
+                                <line x1="10" y1="40" x2="290" y2="40" stroke="var(--mut)" stroke-width="2"/>
+                                
+                                <rect x="20" y="30" width="10" height="10" fill="white" rx="2"/>
+                                <text x="25" y="55" fill="white" font-size="8" text-anchor="middle">10</text>
+                                
+                                <rect x="45" y="30" width="10" height="10" fill="white" rx="2"/>
+                                <text x="50" y="55" fill="white" font-size="8" text-anchor="middle">12</text>
+                                
+                                <rect x="70" y="30" width="10" height="10" fill="var(--success)" rx="2"/>
+                                <text x="75" y="55" fill="var(--success)" font-size="8" font-weight="bold" text-anchor="middle">14</text>
+                                
+                                <rect x="95" y="30" width="10" height="10" fill="white" rx="2"/>
+                                <text x="100" y="55" fill="white" font-size="8" text-anchor="middle">16</text>
+                                
+                                <rect id="m3-box" x="120" y="25" width="20" height="20" fill="var(--warning)" rx="4"/>
+                                <text id="m3-box-lbl" x="130" y="20" fill="var(--bg-dark)" font-size="10" font-weight="bold" text-anchor="middle">20</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod3-3" class="theory-step" data-mod="mod3">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--warning)">3.</span> Die Spannweite (Range)</h3>
+                        <p>Neben den Lagekennzahlen (Wo ist die Mitte?) brauchen wir Streukennzahlen. Sie zeigen uns, wie stark die Daten verteilt sind.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--info);">
+                            <h4 style="color: var(--info); font-size: 1.3em;">Die einfachste Streukennzahl</h4>
+                            <p>Die Spannweite gibt schlicht an, wie weit der kleinste und der grösste Wert der gesamten Datenreihe auseinanderliegen<span class="cite">[cite: 1]</span>.</p>
+                            <p style="padding: 15px; background: rgba(0,0,0,0.5); border-radius: 8px; font-family: monospace; font-size: 1.2em; text-align: center; margin-top: 15px; color: var(--info);">Spannweite = Maximum - Minimum</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-dots" id="mod3-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+                <div style="text-align: right;"><button class="btn warning" id="mod3-next-btn" onclick="nextTheory('mod3')">Aufgaben starten</button></div>
+            </div>
+        </div>
+
+        <div id="mod3-game" class="screen">
+            <div class="glass-panel">
+                <h2 style="font-size: 2.2em;">Zentrum & Streuung</h2>
+                <div id="mod3-question" class="question-text" style="font-size: 1.5em; margin-bottom: 10px;"></div>
+                <div id="mod3-dataset" style="font-size: 1.8em; letter-spacing: 5px; font-weight: bold; background: rgba(0,0,0,0.4); padding: 40px; text-align: center; border-radius: 20px; margin: 30px 0; border: 1px solid var(--glass-border);"></div>
+                <div class="grid-2" id="mod3-options"></div>
+                <p id="mod3-score" style="text-align: right; color: var(--warning); font-weight: bold; margin-top: 40px; font-size: 1.4em;">Fortschritt: 0 / 25</p>
+            </div>
+        </div>
+
+        <!-- ================= MODULE 4: BOXPLOT ================= -->
+        <div id="mod4-theory" class="screen">
+            <div class="glass-panel">
+                <h2 style="color: var(--info); border-bottom: 2px solid var(--glass-border); padding-bottom: 25px; font-size: 2.2em;">Study Guide: Der Boxplot</h2>
+                
+                <div id="step-mod4-1" class="theory-step active" data-mod="mod4">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--info)">1.</span> Kompakte Visualisierung</h3>
+                        <p>Der Boxplot ist eine extrem effiziente Darstellung. Er teilt die sortierten Daten in 4 gleich grosse Viertel (je 25% der Datenmengen) ein. Er besteht aus 5 Werten<span class="cite">[cite: 1]</span>:</p>
+                        
+                        <div class="grid-2" style="margin-top: 30px;">
+                            <div class="notebook-box" style="border-color: var(--info); margin:0;">
+                                <ul style="margin:0;">
+                                    <li><strong>Minimum:</strong> Die kleinste Ausprägung (Antenne).</li>
+                                    <li><strong>Unteres Quartil (Q1):</strong> 25% der Werte sind kleiner.</li>
+                                    <li><strong>Median (Q2):</strong> Exakt die Mitte (50%).</li>
+                                </ul>
+                            </div>
+                            <div class="notebook-box" style="border-color: var(--info); margin:0;">
+                                <ul style="margin:0;">
+                                    <li><strong>Oberes Quartil (Q3):</strong> 75% der Werte sind kleiner.</li>
+                                    <li><strong>Maximum:</strong> Die grösste Ausprägung (Antenne).</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod4-2" class="theory-step" data-mod="mod4">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--info)">2.</span> Box, IQR & Ausreisser</h3>
+                        <p>Die farbige <strong>Box</strong> reicht von Q1 bis Q3. In ihr befinden sich exakt <strong>die mittleren 50% aller erhobenen Werte</strong><span class="cite">[cite: 1]</span>.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--info);">
+                            <h4 style="color: var(--info); font-size: 1.3em;">Die Ausreisser-Regel</h4>
+                            <p>Die Breite der Box nennt man <strong>Quartilsdifferenz (IQR)</strong>. <br>Werte, die extrem weit vom Zentrum entfernt sind (meist definiert als > 1.5 * IQR über Q3 oder unter Q1), werden oft nicht mehr mit der Antenne verbunden, sondern als einzelne Punkte gezeichnet. Sie gelten als <strong>Ausreisser</strong><span class="cite">[cite: 1]</span>.</p>
+                        </div>
+
+                        <div class="theory-graphic">
+                            <svg viewBox="0 0 300 120">
+                                <line x1="20" y1="90" x2="280" y2="90" stroke="#cbd5e1" stroke-width="2"/>
+                                <!-- Antennen -->
+                                <line x1="40" y1="50" x2="90" y2="50" stroke="white" stroke-width="2"/>
+                                <line x1="190" y1="50" x2="230" y2="50" stroke="white" stroke-width="2"/>
+                                <line x1="40" y1="40" x2="40" y2="60" stroke="white" stroke-width="2"/>
+                                <line x1="230" y1="40" x2="230" y2="60" stroke="white" stroke-width="2"/>
+                                
+                                <!-- Box -->
+                                <rect x="90" y="30" width="100" height="40" fill="rgba(245, 158, 11, 0.4)" stroke="#f59e0b" stroke-width="3"/>
+                                <line x1="150" y1="30" x2="150" y2="70" stroke="#f59e0b" stroke-width="4"/>
+                                
+                                <!-- Labels -->
+                                <text x="40" y="20" fill="white" font-size="10" font-weight="bold" text-anchor="middle">Min</text>
+                                <text x="90" y="20" fill="white" font-size="10" font-weight="bold" text-anchor="middle">Q1</text>
+                                <text x="150" y="20" fill="#f59e0b" font-size="10" font-weight="bold" text-anchor="middle">Median</text>
+                                <text x="190" y="20" fill="white" font-size="10" font-weight="bold" text-anchor="middle">Q3</text>
+                                <text x="230" y="20" fill="white" font-size="10" font-weight="bold" text-anchor="middle">Max</text>
+                                
+                                <!-- Ausreisser -->
+                                <circle cx="270" cy="50" r="4" fill="var(--warning)"/>
+                                <text x="270" y="70" fill="var(--warning)" font-size="8" font-weight="bold" text-anchor="middle">Ausreisser</text>
+                                
+                                <!-- IQR Pfeil -->
+                                <line x1="90" y1="75" x2="190" y2="75" stroke="var(--info)" stroke-width="1.5" stroke-dasharray="3,3"/>
+                                <text x="140" y="85" fill="var(--info)" font-size="8" font-weight="bold" text-anchor="middle">Breite = IQR</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-dots" id="mod4-dots"><div class="dot active"></div><div class="dot"></div></div>
+                <div style="text-align: right;"><button class="btn info" id="mod4-next-btn" onclick="nextTheory('mod4')">Aufgaben starten</button></div>
+            </div>
+        </div>
+
+        <div id="mod4-game" class="screen">
+            <div class="glass-panel">
+                <h2 style="font-size: 2.2em;">Boxplot Analyse</h2>
+                <div id="mod4-graphic" class="theory-graphic" style="background: rgba(255,255,255,0.02); border: none; display:none; height: 250px;"></div>
+                <div id="mod4-dataset" style="font-size: 1.8em; letter-spacing: 5px; font-weight: bold; background: rgba(0,0,0,0.4); padding: 40px; text-align: center; border-radius: 20px; margin: 30px 0; border: 1px solid var(--glass-border); display:none;"></div>
+                <div id="mod4-question" class="question-text" style="font-size: 1.5em; margin-bottom: 30px;"></div>
+                <div class="grid-2" id="mod4-options"></div>
+                <p id="mod4-score" style="text-align: right; color: var(--info); font-weight: bold; margin-top: 40px; font-size: 1.4em;">Fortschritt: 0 / 25</p>
+            </div>
+        </div>
+
+        <!-- ================= MODULE 5: KORRELATION ================= -->
+        <div id="mod5-theory" class="screen">
+            <div class="glass-panel">
+                <h2 style="color: var(--accent); border-bottom: 2px solid var(--glass-border); padding-bottom: 25px; font-size: 2.2em;">Study Guide: Korrelation</h2>
+                
+                <div id="step-mod5-1" class="theory-step active" data-mod="mod5">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--accent)">1.</span> Zusammenhänge messen (r)</h3>
+                        <p>In einem <strong>Streudiagramm</strong> werden zwei Variablen als Punkte in einem x/y-Koordinatensystem eingezeichnet. So lassen sich lineare Zusammenhänge aufzeigen<span class="cite">[cite: 1]</span>.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--accent);">
+                            <h4 style="color: var(--accent); font-size: 1.3em;">Der Korrelationskoeffizient</h4>
+                            <p>Er beschreibt, wie stark die beiden Variablen zusammenhängen. Er liegt immer exakt zwischen <strong>-1.0 und +1.0</strong><span class="cite">[cite: 1]</span>.</p>
+                            <ul>
+                                <li><strong>+1.0 :</strong> Perfekter positiver Zusammenhang (Je mehr X, desto mehr Y).</li>
+                                <li><strong>0.0 :</strong> Kein erkennbarer Zusammenhang (Punktewolke).</li>
+                                <li><strong>-1.0 :</strong> Perfekter negativer Zusammenhang (Je mehr X, desto weniger Y).</li>
+                            </ul>
+                        </div>
+
+                        <div class="theory-graphic">
+                            <label style="color: var(--txt); font-size: 1.1em; font-weight: bold; margin-bottom: 10px;">Interaktiver Trend-Simulator:</label>
+                            <p style="color: var(--mut); font-size: 0.9em; margin-bottom: 20px; text-align: center;">Verschiebe den Regler und beobachte, wie sich die Punktewolke formiert.</p>
+                            
+                            <input type="range" min="-1" max="1" step="0.01" value="0" oninput="updM5(this.value)" style="max-width: 400px;">
+                            
+                            <div style="text-align:center; font-family:'Share Tech Mono'; font-size:1.8em; color:var(--accent); margin-top: 10px; margin-bottom: 20px;">
+                                r = <span id="m5-rval">0.00</span>
+                            </div>
+                            
+                            <div id="m5-dyn-g" style="width: 100%; max-width: 300px; height: 150px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod5-2" class="theory-step" data-mod="mod5">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--accent)">2.</span> Korrelation ≠ Kausalität</h3>
+                        <p>Das ist einer der häufigsten Fehler in der Interpretation von Daten!</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--warning); background: rgba(244, 63, 94, 0.1);">
+                            <h4 style="color: var(--warning); font-size: 1.3em;">Achtung Falle</h4>
+                            <p>Wird eine Korrelation festgestellt, bedeutet das NICHT zwingend, dass Variable A die direkte Ursache für Variable B ist<span class="cite">[cite: 1]</span>. Sehr oft gibt es einen versteckten dritten Faktor, der beide beeinflusst.</p>
+                            <p class="notebook-quote">Klassisches Beispiel: Der Verkauf von Eiscreme und die Anzahl von Sonnenbränden steigen im Sommer exakt parallel an (starke positive Korrelation). Verursacht Eis essen also Sonnenbrand? Nein. Beides wird schlicht durch die Hitze ausgelöst.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-dots" id="mod5-dots"><div class="dot active"></div><div class="dot"></div></div>
+                <div style="text-align: right;"><button class="btn accent" id="mod5-next-btn" onclick="nextTheory('mod5')">Aufgaben starten</button></div>
+            </div>
+        </div>
+
+        <div id="mod5-game" class="screen">
+            <div class="glass-panel">
+                <h2 style="font-size: 2.2em;">Trend-Scout</h2>
+                <div id="mod5-graphic-container" class="theory-graphic" style="height: 300px; background: rgba(0,0,0,0.4); display: none;"></div>
+                <div id="mod5-question" class="question-text" style="font-size: 1.5em; margin-bottom: 40px;"></div>
+                <div class="grid-2" id="mod5-options"></div>
+                <p id="mod5-score" style="text-align: right; color: var(--accent); font-weight: bold; margin-top: 40px; font-size: 1.4em;">Fortschritt: 0 / 25</p>
+            </div>
+        </div>
+
+        <!-- ================= MODULE 6: UMFRAGEN ================= -->
+        <div id="mod6-theory" class="screen">
+            <div class="glass-panel">
+                <h2 style="color: var(--pink); border-bottom: 2px solid var(--glass-border); padding-bottom: 25px; font-size: 2.2em;">Study Guide: Umfragen</h2>
+                
+                <div id="step-mod6-1" class="theory-step active" data-mod="mod6">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--pink)">1.</span> Zielsetzung & Adressaten</h3>
+                        <p>Der wichtigste Schritt vor der Umfrage ist die Planung. Was will ich herausfinden und wen frage ich?</p>
+                        
+                        <div class="grid-2" style="margin-top: 30px;">
+                            <div class="notebook-box" style="border-color: var(--pink); margin:0;">
+                                <h4 style="color: var(--pink); font-size: 1.2em;">Die Hypothese</h4>
+                                <p>Oft stellt man im Vorfeld eine konkrete Behauptung auf, die man durch die Daten beweisen (verifizieren) oder widerlegen (falsifizieren) will<span class="cite">[cite: 3]</span>.</p>
+                            </div>
+                            <div class="notebook-box" style="border-color: var(--pink); margin:0;">
+                                <h4 style="color: var(--pink); font-size: 1.2em;">Die Stichprobe</h4>
+                                <p>Kann man nicht die gesamte Population befragen (Vollerhebung), wählt man einen repräsentativen, zufälligen Teil: Die Zufallsstichprobe<span class="cite">[cite: 4]</span>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod6-2" class="theory-step" data-mod="mod6">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--pink)">2.</span> Fragebogen-Design</h3>
+                        <p>Die Art der Formulierung entscheidet über die Qualität der Daten.</p>
+                        
+                        <div class="notebook-box" style="border-color: var(--warning); background: rgba(244, 63, 94, 0.1);">
+                            <h4 style="color: var(--warning); font-size: 1.3em;">Verbot für Suggestivfragen!</h4>
+                            <p>Fragen, die dem Befragten die Antwort durch die Formulierung bereits in den Mund legen, machen die erhobenen Daten komplett wertlos<span class="cite">[cite: 5]</span>.</p>
+                            <p style="margin-top: 10px; font-style:italic; color: var(--txt);">Falsch: "Finden Sie nicht auch, dass das super ist?"<br>Richtig: "Wie beurteilen Sie die Qualität?"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-mod6-3" class="theory-step" data-mod="mod6">
+                    <div class="notebook-guide">
+                        <h3><span style="color:var(--pink)">3.</span> Auswertung der Fragetypen</h3>
+                        <p>Je nach Fragetyp brauchst du andere Methoden für die Auswertung<span class="cite">[cite: 6, 7]</span>.</p>
+                        
+                        <div class="grid-2" style="margin-top: 30px;">
+                            <div class="notebook-box" style="border-color: #ec4899; margin:0;">
+                                <h4 style="color: #ec4899; font-size: 1.2em;">Mehrfachauswahl</h4>
+                                <p>Hier macht das <strong>Kuchendiagramm gar keinen Sinn</strong>, da die Summe der Antworten oft über 100% liegt. Nutze Säulendiagramme<span class="cite">[cite: 7]</span>!</p>
+                            </div>
+                            <div class="notebook-box" style="border-color: #ec4899; margin:0;">
+                                <h4 style="color: #ec4899; font-size: 1.2em;">Bewertungsfragen</h4>
+                                <p>Bei Likert-Skalen oder Schulnoten (1-6) macht es Sinn, den Durchschnitt (Mittelwert) zu berechnen<span class="cite">[cite: 7]</span>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-dots" id="mod6-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+                <div style="text-align: right;"><button class="btn pink" id="mod6-next-btn" onclick="nextTheory('mod6')">Aufgaben starten</button></div>
+            </div>
+        </div>
+
+        <div id="mod6-game" class="screen">
+            <div class="glass-panel">
+                <h2 style="font-size: 2.2em;">Umfragen Design</h2>
+                <div id="mod6-question" class="question-text" style="font-size: 1.5em; margin-bottom: 40px; background: rgba(0,0,0,0.3); padding: 30px; border-radius: 16px; border: 1px solid var(--glass-border);"></div>
+                <div class="grid-2" id="mod6-options"></div>
+                <p id="mod6-score" style="text-align: right; color: var(--pink); font-weight: bold; margin-top: 40px; font-size: 1.4em;">Fortschritt: 0 / 25</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Socratic AI Modal -->
+    <div id="ai-modal" class="ai-hud">
+        <h3 style="color: var(--warning); margin: 0 0 5px 0; font-family: 'Share Tech Mono'; font-size: 1.1em; display:flex; align-items:center; gap: 8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            SYS_ERROR // Assistenz
+        </h3>
+        <p id="ai-text" style="font-size: 1.3em; margin: 10px 0 15px 0; color: var(--txt); line-height: 1.4; font-weight: 600;"></p>
+        <button class="btn warning" style="margin: 0; padding: 12px 20px; font-size: 1.1em; width: 100%;" onclick="closeAi()">Rekalibrieren</button>
+    </div>
+
+    <script>
+        // --- Core Gamification ---
+        let globalScore = 0; let streak = 0; let completedModules = new Set();
+        const TARGET_SCORE = 25; 
+
+        function addScore() {
+            streak++; let pts = 100 * streak; globalScore += pts;
+            document.getElementById('global-score').innerText = globalScore;
+            document.getElementById('streak-badge').innerText = 'x' + streak;
+            document.getElementById('toast-pts').innerText = '+' + pts;
+        }
+
+        function resetStreak() {
+            streak = 0; document.getElementById('streak-badge').innerText = 'x1';
+        }
+
+        function markModuleCompleted(num) {
+            completedModules.add(num);
+            document.getElementById('card-mod'+num).classList.add('completed');
+            if(completedModules.size === 6) {
+                document.getElementById('end-title').innerText = "DATA LAB GEMEISTERT!";
+                let rank = "Labor-Praktikant";
+                if(globalScore > 20000) rank = "Daten-Analyst";
+                if(globalScore > 40000) rank = "Statistik-Crack";
+                document.getElementById('end-desc').innerHTML = `Finaler Score: <strong>${globalScore}</strong><br>Rang: <strong style="color:var(--primary);">${rank}</strong>`;
+            } else {
+                document.getElementById('end-title').innerText = "MODUL ABSOLVIERT!";
+                document.getElementById('end-desc').innerText = `25 Aufgaben erfolgreich kalibriert.`;
+            }
+            document.getElementById('level-complete-modal').classList.add('show');
+        }
+
+        function closeLevelComplete() { document.getElementById('level-complete-modal').classList.remove('show'); goHome(); }
+
+        // --- Core UI Functions ---
+        let theorySteps = {};
+        function navTo(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); closeAi(); window.scrollTo(0,0); }
+        function goHome() { navTo('screen-home'); document.getElementById('btn-back').style.display = 'none'; }
+        function startModule(num) { let prefix = 'mod' + num; theorySteps[prefix] = 1; updateTheoryView(prefix, 1); document.getElementById('btn-back').style.display = 'block'; navTo(prefix + '-theory'); }
+        
+        function nextTheory(prefix) { 
+            const tSteps = document.querySelectorAll(`.theory-step[data-mod="${prefix}"]`).length; 
+            if(theorySteps[prefix] < tSteps) { 
+                theorySteps[prefix]++; 
+                updateTheoryView(prefix, theorySteps[prefix]); 
+            } else { 
+                window['init'+prefix.charAt(0).toUpperCase()+prefix.slice(1)](); 
+            } 
+            window.scrollTo(0,0); 
+        }
+        
+        function updateTheoryView(prefix, step) { 
+            document.querySelectorAll(`.theory-step[data-mod="${prefix}"]`).forEach(el => el.classList.remove('active')); 
+            document.getElementById(`step-${prefix}-${step}`).classList.add('active'); 
+            const dots = document.querySelectorAll(`#${prefix}-dots .dot`); 
+            if(dots.length > 0) { dots.forEach((d, i) => { d.className = 'dot'; if(i < step) d.classList.add('active'); }); } 
+            const tSteps = document.querySelectorAll(`.theory-step[data-mod="${prefix}"]`).length; 
+            const btn = document.getElementById(`${prefix}-next-btn`); 
+            if(step === tSteps) btn.innerText = "Aufgaben starten"; else btn.innerText = "Weiter ►"; 
+        }
+        
+        function showAi(txt) { resetStreak(); document.getElementById('ai-text').innerHTML = txt; document.getElementById('ai-modal').classList.add('show'); }
+        function closeAi() { document.getElementById('ai-modal').classList.remove('show'); }
+        function showSysToast() { const toast = document.getElementById('sys-toast'); toast.classList.add('show'); setTimeout(() => { toast.classList.remove('show'); }, 1200); }
+        
+        function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+        
+        function buildOptions(containerId, options, correctAns, hintText, successCallback, moduleClass) {
+            let optCont = document.getElementById(containerId); optCont.innerHTML = '';
+            options.forEach(ans => { 
+                let btn = document.createElement('button'); 
+                btn.className = `opt ${moduleClass}`; 
+                btn.innerText = ans; 
+                btn.onclick = () => { 
+                    if(ans == correctAns) { addScore(); showSysToast(); successCallback(); } 
+                    else showAi(hintText); 
+                }; 
+                optCont.appendChild(btn); 
+            });
+        }
+
+        // --- Interactive Theory Modules ---
+        window.toggleHist = function(btn) {
+            let isBar = btn.innerText.includes("Säulen →");
+            let rects = [document.getElementById('b1'), document.getElementById('b2'), document.getElementById('b3'), document.getElementById('b4'), document.getElementById('b5')];
+            if(rects[0]) {
+                if(isBar) {
+                    btn.innerText = "Zurück zu Säulen";
+                    rects.forEach((r, i) => { r.setAttribute('width', '40'); r.setAttribute('x', 25 + (i * 40)); });
+                } else {
+                    btn.innerText = "Säulen → Histogramm (Klick!)";
+                    rects.forEach((r, i) => { r.setAttribute('width', '25'); r.setAttribute('x', 25 + (i * 40)); });
+                }
+            }
+        };
+
+        window.drawChart = function(type) {
+            let cont = document.getElementById('m2-dynamic-chart');
+            let btns = [document.getElementById('btn-pie'), document.getElementById('btn-bar'), document.getElementById('btn-hist')];
+            btns.forEach(b => b.classList.remove('active-tab')); document.getElementById('btn-'+type).classList.add('active-tab');
+
+            if(type === 'pie') {
+                cont.innerHTML = `<div class="pie-chart-css" style="width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(var(--primary) 0% 25%, var(--success) 25% 80%, var(--warning) 80% 100%);"></div>`;
+            } else if(type === 'bar') {
+                cont.innerHTML = `<svg viewBox="0 0 100 100" style="width: 100px; height: 100px; overflow:visible;"><rect x="10" y="75" width="15" height="25" fill="var(--primary)"/><rect x="42.5" y="45" width="15" height="55" fill="var(--success)"/><rect x="75" y="80" width="15" height="20" fill="var(--warning)"/></svg>`;
+            } else if(type === 'hist') {
+                cont.innerHTML = `<svg viewBox="0 0 100 100" style="width: 100px; height: 100px; overflow:visible;"><rect x="20" y="75" width="20" height="25" fill="var(--primary)" stroke="var(--bg-dark)" stroke-width="1"/><rect x="40" y="45" width="20" height="55" fill="var(--success)" stroke="var(--bg-dark)" stroke-width="1"/><rect x="60" y="80" width="20" height="20" fill="var(--warning)" stroke="var(--bg-dark)" stroke-width="1"/></svg>`;
+            }
+        };
+
+        window.updM3 = function(val) {
+            let v = parseFloat(val);
+            let mean = (10 + 12 + 14 + 16 + v) / 5;
+            document.getElementById('m3-mean').innerText = mean.toFixed(1);
+            document.getElementById('m3-med').innerText = "14.0";
+            
+            let box = document.getElementById('m3-box');
+            let lbl = document.getElementById('m3-box-lbl');
+            let x = 120 + ((v - 20) * 1.5); 
+            if(box && lbl) {
+                box.setAttribute('x', x);
+                lbl.setAttribute('x', x + 10);
+                lbl.textContent = Math.round(v);
+            }
+        };
+
+        window.updM5 = function(val) {
+            let v = parseFloat(val);
+            let rval = document.getElementById('m5-rval');
+            if(rval) rval.innerText = (v > 0 ? "+" : "") + v.toFixed(2);
+            let s = `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%;">`;
+            for(let i=0; i<40; i++) {
+                let x = Math.random() * 80 + 10;
+                let sp = (1 - Math.abs(v)) * 40; 
+                let y;
+                if(v > 0) y = 90 - (x * 0.8) + (Math.random() * sp - sp/2);
+                else if(v < 0) y = (x * 0.8) + (Math.random() * sp - sp/2);
+                else y = Math.random() * 80 + 10;
+                s += `<circle cx="${x}" cy="${Math.max(2, Math.min(98, y))}" r="2.5" fill="var(--accent)"/>`;
+            }
+            s += `</svg>`;
+            let container = document.getElementById('m5-dyn-g');
+            if(container) container.innerHTML = s;
+        };
+        setTimeout(() => { if(document.getElementById('m5-dyn-g')) window.updM5(0); }, 500);
+
+        // ================= MOD 1: SKALEN =================
+        let m1Score = 0; let m1ActivePool = [];
+        const mod1DataPool = [
+            { t: `Instagram Follower`, c: `diskret`, h: `Zählbare, isolierte Werte.` }, { t: `Kleidergrösse (S, M, L)`, c: `ordinal`, h: `Ordnung vorhanden, aber Abstand undefiniert.` },
+            { t: `Ping-Latenz (in ms)`, c: `stetig`, h: `Zeitmessung (Kommawerte möglich).` }, { t: `Lieblings-App`, c: `nominal`, h: `Keine mathematische Reihenfolge.` },
+            { t: `Anzahl Geschwister`, c: `diskret`, h: `Zählwerte. Nur ganze Zahlen.` }, { t: `Hotel-Sterne`, c: `ordinal`, h: `Rangordnung, aber keine echten Messwerte.` },
+            { t: `Körpergrösse`, c: `stetig`, h: `Messwerte aus einem Kontinuum.` }, { t: `Wohnkanton`, c: `nominal`, h: `Keine logische Reihenfolge.` },
+            { t: `Blutgruppe`, c: `nominal`, h: `Keine Rangordnung.` }, { t: `Zufriedenheit`, c: `ordinal`, h: `Klare Rangordnung, Abstände nicht exakt.` },
+            { t: `Temperatur (°C)`, c: `stetig`, h: `Stetige Messwerte.` }, { t: `Kinderzahl`, c: `diskret`, h: `Isolierte Zahlenwerte (Zählung).` },
+            { t: `Pulsschläge pro Minute`, c: `diskret`, h: `Ganze Schläge pro Minute gezählt.` }, { t: `Zivilstand`, c: `nominal`, h: `Ohne natürliche Reihenfolge.` },
+            { t: `Schulnoten`, c: `ordinal`, h: `Ordinal behandelt (Ränge).` }, { t: `Sprungweite`, c: `stetig`, h: `Jeder Zwischenwert möglich.` },
+            { t: `Haarfarbe`, c: `nominal`, h: `Ohne Rangordnung.` }, { t: `Rangliste (1., 2. Platz)`, c: `ordinal`, h: `Reihenfolge vorhanden, Abstand unklar.` },
+            { t: `Anzahl der Tiere`, c: `diskret`, h: `Zählbare, isolierte Werte.` }, { t: `Volumen in m³`, c: `stetig`, h: `Ein stetiger Messwert.` },
+            { t: `Nationalität`, c: `nominal`, h: `Reine Kategorie.` }, { t: `Militärischer Rang`, c: `ordinal`, h: `Klare Hierarchie.` },
+            { t: `Gehalt in CHF`, c: `stetig`, h: `Währung ist stetig (Bruchteile).` }, { t: `Verpasste Lektionen`, c: `diskret`, h: `Werden als ganze Einheiten gezählt.` },
+            { t: `Augenfarbe`, c: `nominal`, h: `Reine Beobachtungskategorie.` }
+        ];
+
+        function initMod1() {
+            navTo('mod1-game'); m1Score = 0;
+            m1ActivePool = shuffle([...mod1DataPool]);
+            document.getElementById('mod1-score').innerText = `Fortschritt: 0 / ${TARGET_SCORE}`;
+            nextMod1Question();
+        }
+
+        function nextMod1Question() {
+            let item = m1ActivePool[m1Score];
+            let type = m1Score % 5; 
+            let qText = document.getElementById('mod1-question');
+            let dropzones = document.getElementById('mod1-dropzones');
+            let optionsCont = document.getElementById('mod1-options');
+            dropzones.style.display = 'none'; optionsCont.style.display = 'grid';
+
+            if(type === 0) {
+                qText.innerText = `Skaliere das Merkmal: "${item.t}"`;
+                optionsCont.style.display = 'none'; dropzones.style.display = 'grid';
+                window.checkMod1 = function(ans) {
+                    if(ans === item.c) { addScore(); showSysToast(); m1Score++; updateMod1Score(); }
+                    else showAi(item.h);
+                };
+            } else if (type === 1) {
+                qText.innerText = `Welches Skalenniveau hat: "${item.t}"?`;
+                buildOptions('mod1-options', shuffle(['nominal', 'ordinal', 'diskret', 'stetig']), item.c, item.h, () => { m1Score++; updateMod1Score(); }, 'm1');
+            } else if (type === 2) {
+                qText.innerText = `Welches Merkmal ist ${item.c.toUpperCase()} skaliert?`;
+                let wrong = shuffle(mod1DataPool.filter(x => x.c !== item.c)).slice(0,3);
+                buildOptions('mod1-options', shuffle([item.t, wrong[0].t, wrong[1].t, wrong[2].t]), item.t, `Gesucht wird ein Merkmal vom Typ ${item.c}.`, () => { m1Score++; updateMod1Score(); }, 'm1');
+            } else if (type === 3) {
+                let isTrue = Math.random() > 0.5;
+                let claimScale = isTrue ? item.c : ['nominal', 'ordinal', 'diskret', 'stetig'].find(s => s !== item.c);
+                qText.innerText = `Wahr oder Falsch? Das Merkmal "${item.t}" ist ${claimScale} skaliert.`;
+                buildOptions('mod1-options', ['Wahr', 'Falsch'], isTrue ? 'Wahr' : 'Falsch', `Denk nach: Das Merkmal ist eigentlich ${item.c}.`, () => { m1Score++; updateMod1Score(); }, 'm1');
+            } else {
+                qText.innerText = `Das Merkmal "${item.t}" hat welche Eigenschaft?`;
+                let props = { 'nominal':'Qualitativ, keine Rangordnung', 'ordinal':'Qualitativ, mit Rangordnung', 'diskret':'Quantitativ, isolierte Werte', 'stetig':'Quantitativ, Intervalle' };
+                buildOptions('mod1-options', shuffle(Object.values(props)), props[item.c], item.h, () => { m1Score++; updateMod1Score(); }, 'm1');
+            }
+        }
+        function updateMod1Score() {
+            document.getElementById('mod1-score').innerText = `Fortschritt: ${m1Score} / ${TARGET_SCORE}`;
+            if(m1Score >= TARGET_SCORE) markModuleCompleted(1);
+            else nextMod1Question();
+        }
+
+        // ================= MOD 2: GRAFIKEN =================
+        let m2Score = 0; let m2ActiveQueue = [];
+        function initMod2() {
+            navTo('mod2-game'); m2Score = 0;
+            document.getElementById('mod2-score').innerText = `Fortschritt: 0 / ${TARGET_SCORE}`;
+            let qQueue = [];
+            const texts = [
+                { q: `Welches Diagramm hat KEINE Zwischenräume zwischen den Säulen?`, a: `Histogramm`, o: [`Säulendiagramm`, `Kreisdiagramm`, `Streudiagramm`], h: `Es stellt stetige Daten in aneinandergrenzenden Klassen dar.` },
+                { q: `Welches Diagramm zeigt den relativen Anteil (in %) einer Kategorie am besten?`, a: `Kreisdiagramm`, o: [`Histogramm`, `Streudiagramm`, `Liniendiagramm`], h: `Anteile an einem Ganzen.` },
+                { q: `Klassenbreite ist extrem relevant bei welchem Diagramm?`, a: `Histogramm`, o: [`Kreisdiagramm`, `Säulendiagramm`, `Balkendiagramm`], h: `Nur stetige Daten werden in aufeinanderfolgende Klassen eingeteilt.` },
+                { q: `Isolierte qualitative Kategorien, um absolute Höhen zu vergleichen. Was passt?`, a: `Säulendiagramm`, o: [`Histogramm`, `Liniendiagramm`, `Streudiagramm`], h: `Säulen mit Zwischenräumen.` },
+                { q: `Zwei quantitative Merkmale in einem Koordinatensystem (Korrelation). Welches Diagramm?`, a: `Streudiagramm`, o: [`Histogramm`, `Balkendiagramm`, `Kreisdiagramm`], h: `Punkte im x/y System.` }
+            ];
+            for(let i=0; i<15; i++) {
+                let base = texts[i % texts.length];
+                let subjects = ["Ein Daten-Analyst", "Eine Studentin", "Der Lehrer", "Eine Studie", "Das Labor"];
+                let sub = subjects[i % subjects.length];
+                qQueue.push({ type: 'text', q: `Szenario: ${sub} fragt: ${base.q}`, a: base.a, o: base.o, h: base.h });
+            }
+            for(let i=0; i<10; i++) { qQueue.push({ type: 'svg', variant: i % 3 }); }
+            m2ActiveQueue = shuffle(qQueue);
+            nextMod2Question();
+        }
+
+        function nextMod2Question() {
+            let item = m2ActiveQueue[m2Score];
+            let container = document.getElementById('mod2-graphic-container');
+            let qText = document.getElementById('mod2-question');
+            container.style.display = 'none';
+
+            if (item.type === 'text') {
+                qText.innerText = item.q;
+                buildOptions('mod2-options', shuffle([item.a, ...item.o.slice(0,3)]), item.a, item.h, () => { m2Score++; updateMod2Score(); }, 'm2');
+            } else {
+                container.style.display = 'flex';
+                if (item.variant === 0) { 
+                    let colors = ['var(--primary)', 'var(--success)', 'var(--warning)', 'var(--accent)']; shuffle(colors);
+                    let p1 = Math.floor(Math.random() * 30) + 20; let p2 = p1 + Math.floor(Math.random() * 30) + 20;
+                    container.innerHTML = `<div class="pie-chart-css" style="border-radius: 50%; background: conic-gradient(${colors[0]} 0% ${p1}%, ${colors[1]} ${p1}% ${p2}%, ${colors[2]} ${p2}% 100%); width: 140px; height: 140px;"></div>`;
+                    qText.innerText = 'Welcher Diagrammtyp stellt hier Anteile dar?';
+                    buildOptions('mod2-options', shuffle(['Kreisdiagramm', 'Säulendiagramm', 'Histogramm', 'Streudiagramm']), 'Kreisdiagramm', 'Es ist rund und zeigt Anteile.', () => { m2Score++; updateMod2Score(); }, 'm2');
+                } else if (item.variant === 1) { 
+                    let h1 = Math.random()*25+15; let h2 = Math.random()*30+20; let h3 = Math.random()*20+10;
+                    container.innerHTML = `<svg viewBox="0 0 100 60" style="max-height:100%; width:auto; overflow:visible;"><rect x="20" y="${60-h1}" width="20" height="${h1}" fill="var(--primary)" stroke="var(--bg-dark)"/><rect x="40" y="${60-h2}" width="20" height="${h2}" fill="var(--primary)" stroke="var(--bg-dark)"/><rect x="60" y="${60-h3}" width="20" height="${h3}" fill="var(--primary)" stroke="var(--bg-dark)"/></svg>`;
+                    qText.innerText = 'Die Balken haben KEINE Lücken. Welches Diagramm ist das?';
+                    buildOptions('mod2-options', shuffle(['Histogramm', 'Säulendiagramm', 'Balkendiagramm', 'Streudiagramm']), 'Histogramm', 'Keine Lücken = Histogramm.', () => { m2Score++; updateMod2Score(); }, 'm2');
+                } else { 
+                    let ha = Math.random()*25+15; let hb = Math.random()*30+20; let hc = Math.random()*20+10;
+                    container.innerHTML = `<svg viewBox="0 0 100 60" style="max-height:100%; width:auto; overflow:visible;"><rect x="15" y="${60-ha}" width="15" height="${ha}" fill="var(--success)"/><rect x="40" y="${60-hb}" width="15" height="${hb}" fill="var(--success)"/><rect x="65" y="${60-hc}" width="15" height="${hc}" fill="var(--success)"/></svg>`;
+                    qText.innerText = 'Die Balken haben Zwischenräume. Welches Diagramm ist das?';
+                    buildOptions('mod2-options', shuffle(['Säulendiagramm', 'Histogramm', 'Kreisdiagramm', 'Boxplot']), 'Säulendiagramm', 'Zwischenräume trennen qualitative Ausprägungen.', () => { m2Score++; updateMod2Score(); }, 'm2');
+                }
+            }
+        }
+        function updateMod2Score() {
+            document.getElementById('mod2-score').innerText = `Fortschritt: ${m2Score} / ${TARGET_SCORE}`;
+            if(m2Score >= TARGET_SCORE) markModuleCompleted(2);
+            else nextMod2Question();
+        }
+
+        // ================= MOD 3: LAGEKENNZAHLEN =================
+        let m3Score = 0; let m3Sequence = [];
+        function initMod3() { 
+            navTo('mod3-game'); m3Score = 0;
+            document.getElementById('mod3-score').innerText = `Fortschritt: 0 / ${TARGET_SCORE}`;
+            m3Sequence = shuffle(Array.from({length: 25}, (_, i) => i % 5));
+            generateMod3(); 
+        }
+
+        function generateMod3() {
+            let type = m3Sequence[m3Score];
+            let qText = document.getElementById('mod3-question');
+            let dataBox = document.getElementById('mod3-dataset');
+            dataBox.style.display = 'block';
+            let targetAns, hint, options = [];
+
+            if (type === 0 || type === 1) { 
+                let isEven = type === 1; let count = isEven ? 6 : 5; let nums = []; 
+                for(let i=0; i<count; i++) nums.push(Math.floor(Math.random() * 30) + 1);
+                let sorted = [...nums].sort((a,b)=>a-b);
+                let median = isEven ? (sorted[2] + sorted[3])/2 : sorted[2];
+                dataBox.innerText = nums.join("  |  ");
+                qText.innerText = "Ordne die Werte im Kopf und berechne den MEDIAN.";
+                targetAns = median;
+                hint = `Die sortierte Liste ist: ${sorted.join(', ')}.`;
+                options = [targetAns, targetAns+1, targetAns-2, targetAns+0.5, Math.floor(nums.reduce((a,b)=>a+b)/count)];
+
+            } else if (type === 2) { 
+                let nums = []; for(let i=0; i<4; i++) nums.push(Math.floor(Math.random() * 20) + 1);
+                let mean = nums.reduce((a,b)=>a+b)/4;
+                dataBox.innerText = nums.join("  |  ");
+                qText.innerText = "Berechne den MITTELWERT. (Ggf. runden auf 1 Dez.)";
+                targetAns = parseFloat(mean.toFixed(1));
+                hint = `Summiere alle Werte (${nums.reduce((a,b)=>a+b)}) und teile durch 4.`;
+                options = [targetAns, targetAns+1, targetAns-2, targetAns+0.5, targetAns-1.5];
+
+            } else if (type === 3) { 
+                let nums = []; for(let i=0; i<6; i++) nums.push(Math.floor(Math.random() * 50) + 10);
+                let sorted = [...nums].sort((a,b)=>a-b);
+                let range = sorted[5] - sorted[0];
+                dataBox.innerText = nums.join("  |  ");
+                qText.innerText = "Berechne die SPANNWEITE (Range).";
+                targetAns = range;
+                hint = `Spannweite = Maximum (${sorted[5]}) minus Minimum (${sorted[0]}).`;
+                options = [targetAns, targetAns+5, targetAns-2, range+10, sorted[5]];
+
+            } else { 
+                dataBox.style.display = 'none';
+                qText.innerText = "Welche Kennzahl wird durch einen extremen Ausreisser NICHT massiv verfälscht?";
+                targetAns = "Median";
+                hint = "Der Mittelwert wird hochgezogen. Der Median bleibt stabil.";
+                options = ['Median', 'Mittelwert', 'Spannweite', 'Summe'];
+            }
+
+            options = [...new Set(options)].slice(0,4); 
+            while(options.length < 4) options.push(targetAns + Math.floor(Math.random()*5)+1);
+            buildOptions('mod3-options', shuffle(options), targetAns, hint, () => { m3Score++; updateMod3Score(); }, 'm3');
+        }
+        function updateMod3Score() {
+            document.getElementById('mod3-score').innerText = `Fortschritt: ${m3Score} / ${TARGET_SCORE}`;
+            if(m3Score >= TARGET_SCORE) markModuleCompleted(3);
+            else generateMod3();
+        }
+
+        // ================= MOD 4: BOXPLOT =================
+        let m4Score = 0; let m4Sequence = [];
+        function initMod4() { 
+            navTo('mod4-game'); m4Score = 0;
+            document.getElementById('mod4-score').innerText = `Fortschritt: 0 / ${TARGET_SCORE}`;
+            m4Sequence = shuffle(Array.from({length: 25}, (_, i) => i % 4));
+            generateMod4(); 
+        }
+
+        function generateMod4() {
+            let type = m4Sequence[m4Score];
+            let qText = document.getElementById('mod4-question');
+            let graphic = document.getElementById('mod4-graphic');
+            let dataset = document.getElementById('mod4-dataset');
+            
+            let min = Math.floor(Math.random() * 15) + 10;
+            let q1 = min + Math.floor(Math.random() * 10) + 3;
+            let med = q1 + Math.floor(Math.random() * 10) + 3;
+            let q3 = med + Math.floor(Math.random() * 10) + 3;
+            let max = q3 + Math.floor(Math.random() * 15) + 3;
+            let iqr = q3 - q1;
+
+            if (type === 0 || type === 1) { 
+                graphic.style.display = 'flex'; dataset.style.display = 'none';
+                graphic.innerHTML = `
+                <svg viewBox="0 0 100 40" style="width: 100%; height: 100%;">
+                    <line x1="${min}" y1="20" x2="${q1}" y2="20" stroke="white" stroke-width="1"/>
+                    <line x1="${q3}" y1="20" x2="${max}" y2="20" stroke="white" stroke-width="1"/>
+                    <line x1="${min}" y1="15" x2="${min}" y2="25" stroke="white" stroke-width="1"/>
+                    <line x1="${max}" y1="15" x2="${max}" y2="25" stroke="white" stroke-width="1"/>
+                    <rect x="${q1}" y="10" width="${iqr}" height="20" fill="rgba(245, 158, 11, 0.4)" stroke="var(--info)" stroke-width="1"/>
+                    <line x1="${med}" y1="10" x2="${med}" y2="30" stroke="var(--info)" stroke-width="1.5"/>
+                    <text x="${min}" y="38" fill="#cbd5e1" font-size="5" text-anchor="middle">${min}</text>
+                    <text x="${q1}" y="38" fill="#cbd5e1" font-size="5" text-anchor="middle">${q1}</text>
+                    <text x="${med}" y="38" fill="var(--info)" font-size="5" font-weight="bold" text-anchor="middle">${med}</text>
+                    <text x="${q3}" y="38" fill="#cbd5e1" font-size="5" text-anchor="middle">${q3}</text>
+                    <text x="${max}" y="38" fill="#cbd5e1" font-size="5" text-anchor="middle">${max}</text>
+                </svg>`;
+                let targets = [{ k: 'Q1', v: q1 }, { k: 'Median', v: med }, { k: 'Q3', v: q3 }];
+                let target = targets[Math.floor(Math.random() * targets.length)];
+                qText.innerText = `Lies den Wert für "${target.k}" aus dem Boxplot ab:`;
+                let options = shuffle([min, q1, med, q3, max]).slice(0,4);
+                if(!options.includes(target.v)) options[0] = target.v;
+                buildOptions('mod4-options', shuffle(options), target.v, 'Beschriftung ablesen.', () => { m4Score++; updateMod4Score(); }, 'm4');
+
+            } else if (type === 2) { 
+                graphic.style.display = 'none'; dataset.style.display = 'block';
+                let arr = [min, Math.floor((min+q1)/2), q1, med, Math.floor((med+q3)/2), q3, max].sort((a,b)=>a-b);
+                dataset.innerText = arr.join("  |  ");
+                let tKey = Math.random() > 0.5 ? 'Q1' : 'Q3';
+                let tVal = tKey === 'Q1' ? q1 : q3;
+                qText.innerText = `Stichprobe (n=7). Berechne das ${tKey}:`;
+                buildOptions('mod4-options', shuffle([tVal, tVal+2, tVal-1, tVal+5]), tVal, `${tKey} ist der Median der unteren/oberen Hälfte.`, () => { m4Score++; updateMod4Score(); }, 'm4');
+                
+            } else { 
+                graphic.style.display = 'none'; dataset.style.display = 'block';
+                dataset.innerText = `Q1 = ${q1}  |  Q3 = ${q3}`;
+                qText.innerText = "Berechne die Quartilsdifferenz (IQR).";
+                buildOptions('mod4-options', shuffle([iqr, iqr+2, iqr-1, iqr+5]), iqr, "IQR ist Q3 minus Q1.", () => { m4Score++; updateMod4Score(); }, 'm4');
+            }
+        }
+        function updateMod4Score() {
+            document.getElementById('mod4-score').innerText = `Fortschritt: ${m4Score} / ${TARGET_SCORE}`;
+            if(m4Score >= TARGET_SCORE) markModuleCompleted(4);
+            else generateMod4();
+        }
+
+        // ================= MOD 5: KORRELATION =================
+        let m5Score = 0; let m5Sequence = [];
+        function initMod5() { 
+            navTo('mod5-game'); m5Score = 0;
+            document.getElementById('mod5-score').innerText = `Fortschritt: 0 / ${TARGET_SCORE}`;
+            m5Sequence = shuffle(Array.from({length: 25}, (_, i) => i % 4)); 
+            generateMod5(); 
+        }
+
+        function generateMod5() {
+            let container = document.getElementById('mod5-graphic-container');
+            let qText = document.getElementById('mod5-question');
+            let type = m5Sequence[m5Score];
+
+            let correlations = [
+                { r: 0.9, text: 'Stark Positiv', rText: '0.9' }, { r: 0.4, text: 'Schwach Positiv', rText: '0.4' },
+                { r: -0.9, text: 'Stark Negativ', rText: '-0.9' }, { r: -0.4, text: 'Schwach Negativ', rText: '-0.4' },
+                { r: 0, text: 'Keine Korrelation', rText: '0.0' }
+            ];
+            let target = correlations[Math.floor(Math.random() * correlations.length)];
+
+            if(type === 0 || type === 1) { 
+                container.style.display = 'flex';
+                let svg = `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 100%;">`;
+                for(let i=0; i<50; i++) {
+                    let x = Math.random() * 80 + 10; let y;
+                    let spread = (1 - Math.abs(target.r)) * 40; 
+                    if(target.r > 0) y = 90 - (x * 0.8) + (Math.random() * spread - spread/2);
+                    else if(target.r < 0) y = (x * 0.8) + (Math.random() * spread - spread/2);
+                    else y = Math.random() * 80 + 10;
+                    svg += `<circle cx="${x}" cy="${Math.max(2, Math.min(98, y))}" r="2" fill="var(--accent)"/>`;
+                }
+                svg += `</svg>`;
+                container.innerHTML = svg;
+
+                if (type === 0) {
+                    qText.innerText = "Welcher r-Wert passt zu diesem Streudiagramm am besten?";
+                    buildOptions('mod5-options', shuffle(['0.9', '0.4', '-0.9', '-0.4', '0.0']), target.rText, "Achte auf die Richtung und Dichte.", () => { m5Score++; updateMod5Score(); }, 'm5');
+                } else {
+                    qText.innerText = "Wie würdest du diesen Zusammenhang beschreiben?";
+                    buildOptions('mod5-options', shuffle(['Stark Positiv', 'Schwach Positiv', 'Stark Negativ', 'Schwach Negativ', 'Keine Korrelation']), target.text, "Richtung und Dichte der Punkte.", () => { m5Score++; updateMod5Score(); }, 'm5');
+                }
+            } else if (type === 2) { 
+                container.style.display = 'none';
+                let causes = ["Schuhgrösse & Gehalt korrelieren. Sind grosse Füsse die Ursache für Reichtum?", "Störche & Geburtenrate korrelieren. Bringt der Storch Babys?", "Eis & Sonnenbrand korrelieren. Verursacht Eis den Sonnenbrand?"];
+                qText.innerText = causes[Math.floor(Math.random()*causes.length)];
+                buildOptions('mod5-options', ['Ja', 'Nein'], 'Nein', "Korrelation != Kausalität! Ein dritter Faktor ist die Ursache.", () => { m5Score++; updateMod5Score(); }, 'm5');
+            } else { 
+                container.style.display = 'none';
+                qText.innerText = "Welcher dieser r-Werte zeigt den STÄRKSTEN Zusammenhang?";
+                let strong = [-0.95, -0.85, 0.9, 0.8]; let weak = [0.1, -0.2, 0.3, -0.1];
+                let opts = [strong[Math.floor(Math.random()*4)], weak[0], weak[1], weak[2]];
+                buildOptions('mod5-options', shuffle(opts.map(String)), String(opts[0]), "Je weiter der Wert von 0 entfernt ist, desto stärker.", () => { m5Score++; updateMod5Score(); }, 'm5');
+            }
+        }
+        function updateMod5Score() {
+            document.getElementById('mod5-score').innerText = `Fortschritt: ${m5Score} / ${TARGET_SCORE}`;
+            if(m5Score >= TARGET_SCORE) markModuleCompleted(5);
+            else generateMod5();
+        }
+
+        // ================= MOD 6: UMFRAGEN =================
+        let m6Score = 0; let m6ActivePool = [];
+        const mod6DataPool = [
+            { q: `Erster Schritt bei einer Umfrage?`, a: `Zielsetzung definieren`, o: [`Fragen formulieren`, `Daten auswerten`, `Papier kaufen`], h: `Zuerst muss das Ziel klar sein.` },
+            { q: `Welche Zielsetzung überprüft eine Behauptung?`, a: `Hypothese überprüfen`, o: [`Konkrete Fragestellung`, `Vollerhebung`, `Befragung`], h: `Eine Hypothese ist eine Behauptung.` },
+            { q: `Du befragst ALLE Personen einer Gruppe. Wie nennt man das?`, a: `Vollerhebung`, o: [`Zufallsstichprobe`, `Hypothese`, `Mehrfachauswahl`], h: `Die GESAMTE Population.` },
+            { q: `100 zufällige Personen befragen. Das ist eine...?`, a: `Zufallsstichprobe`, o: [`Vollerhebung`, `Hypothese`, `Zählung`], h: `Ein repräsentativer Teil.` },
+            { q: `"Finden Sie nicht auch, dass X super ist?" - Das ist eine...?`, a: `Suggestivfrage`, o: [`Offene Frage`, `Neutrale Frage`, `Hypothese`], h: `Sie suggeriert eine Antwort.` },
+            { q: `Welcher Fragetyp ist für die Auswertung sehr aufwendig?`, a: `Offene Fragen`, o: [`Ja/Nein`, `Mehrfachauswahl`, `Bewertungsfragen`], h: `Texte manuell lesen ist aufwendig.` },
+            { q: `Welches Diagramm ist bei "Mehrfachauswahl" sinnlos?`, a: `Kuchendiagramm`, o: [`Säulendiagramm`, `Balkendiagramm`, `Tabelle`], h: `Summe meist > 100%.` },
+            { q: `Kennzahl bei Schulnoten (1-6)?`, a: `Mittelwert`, o: [`Kuchendiagramm`, `Suggestivfrage`, `Vollerhebung`], h: `Durchschnitt macht hier Sinn.` },
+            { q: `"Was sind Ihre Hobbys?" ohne Antwortmöglichkeiten ist?`, a: `Offen`, o: [`Geschlossen`, `Suggestiv`, `Hypothetisch`], h: `Keine Auswahl = Offen.` },
+            { q: `Was gehört in den Einleitungstext?`, a: `Anonymität zusichern`, o: [`Ergebnis der Studie`, `Suggestivfragen`, `Kosten`], h: `Anonymität, Dank und Ziel.` },
+            { q: `Dürfen Begriffe mit Vorurteilen belastet sein?`, a: `Nein, neutral formulieren`, o: [`Ja`, `Nur bei offenen Fragen`, `Egal`], h: `Absolut neutral bleiben.` },
+            { q: `Liniendiagramm bei Ja/Nein Frage?`, a: `Nein`, o: [`Ja`, `Nur bei Vollerhebungen`, `Manchmal`], h: `Liniendiagramme sind für Verläufe.` },
+            { q: `Fragen mit "Sonstiges: ______" nennt man?`, a: `Halb offen`, o: [`Suggestivfragen`, `Geschlossen`, `Hypothesen`], h: `Mix aus beidem.` },
+            { q: `Sollte man doppelte Verneinungen nutzen?`, a: `Nein`, o: [`Ja`, `Manchmal`, `Egal`], h: `Das verwirrt die Teilnehmer.` },
+            { q: `Sind hypothetische Fragen gut?`, a: `Nein, vermeiden`, o: [`Ja, immer`, `Nur online`, `Sehr wichtig`], h: `Leute können sich schlecht in rein fiktive Lagen versetzen.` },
+            { q: `Was bedeutet "Vollerhebung"?`, a: `Ganze Population befragt`, o: [`Alle Fragen beantwortet`, `Keine offene Frage`, `Alle Papiere voll`], h: `Population = alle.` },
+            { q: `Wann nutzt man eine Stichprobe?`, a: `Wenn Vollerhebung zu gross`, o: [`Wenn man wenig Zeit hat`, `Bei Ja/Nein`, `Immer`], h: `Stichprobe als Abbild der Realität.` },
+            { q: `Sollte "Weiss nicht" möglich sein?`, a: `Ja`, o: [`Nein`, `Nur bei Schülern`, `Nie`], h: `Sonst zwingt man Leute zu falschen Klicks.` },
+            { q: `Welche Sprache im Fragebogen?`, a: `Alltagssprache`, o: [`Fachjargon`, `Fremdwörter`, `Poetisch`], h: `Jeder muss es sofort verstehen.` },
+            { q: `Was ist eine "Geschlossene Frage"?`, a: `Antworten sind vorgegeben`, o: [`Man darf nicht antworten`, `Privat`, `Anonym`], h: `Ja/Nein, Multiple Choice etc.` },
+            { q: `Was ist das Ziel eines Fragebogens?`, a: `Daten erheben`, o: [`Daten verfälschen`, `Meinung bilden`, `Zeit vertreiben`], h: `Daten sammeln.` },
+            { q: `Darf eine Frage positiv UND negativ formuliert sein?`, a: `Ja, als Kontrast`, o: [`Nein, nur positiv`, `Nein, nur negativ`, `Verboten`], h: `Um Tendenzen auszugleichen.` },
+            { q: `Warum keine langen Fragen?`, a: `Teilnehmer brechen ab`, o: [`Papier ist teuer`, `Server stürzt ab`, `Sieht schlecht aus`], h: `Kurze Aufmerksamkeitsspanne.` },
+            { q: `Was macht eine gute Umfrage aus?`, a: `Klare Struktur`, o: [`Viele Farben`, `Lange Texte`, `Schwierige Wörter`], h: `Struktur und Kürze.` },
+            { q: `Ist ein Online-Fragebogen eine Erhebung?`, a: `Ja`, o: [`Nein, Experiment`, `Nein, Test`, `Nein, Theorie`], h: `Vorhandene Daten werden abgerufen.` }
+        ];
+
+        function initMod6() { 
+            navTo('mod6-game'); m6Score = 0;
+            m6ActivePool = shuffle([...mod6DataPool]);
+            document.getElementById('mod6-score').innerText = `Fortschritt: 0 / ${TARGET_SCORE}`;
+            nextMod6Question(); 
+        }
+
+        function nextMod6Question() {
+            let q = m6ActivePool[m6Score];
+            document.getElementById('mod6-question').innerText = q.q;
+            let opts = shuffle([q.a, ...q.o.slice(0,3)]).slice(0,4);
+            buildOptions('mod6-options', opts, q.a, q.h, () => { m6Score++; updateMod6Score(); }, 'm6');
+        }
+
+        function updateMod6Score() {
+            document.getElementById('mod6-score').innerText = `Fortschritt: ${m6Score} / ${TARGET_SCORE}`;
+            if(m6Score >= TARGET_SCORE) markModuleCompleted(6);
+            else nextMod6Question();
+        }
+
+    </script>
+</body>
+</html>
